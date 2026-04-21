@@ -95,36 +95,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Prepare Tauri signing key
-        if: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
         shell: bash
-        run: |
-          if [ -z “${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}” ]; then
-            echo “⚠️ TAURI_SIGNING_PRIVATE_KEY not set, skipping signing”
-            exit 0
-          fi
-          RAW=”${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}”
-          KEY_PATH=”$RUNNER_TEMP/tauri_signing.key”
-          if echo “$RAW” | head -n1 | grep -q '^untrusted comment:'; then
-            printf '%s\n' “$RAW” > “$KEY_PATH”
-          else
-            if DECODED=$(printf '%s' “$RAW” | (base64 --decode 2>/dev/null || base64 -D 2>/dev/null)) \
-               && echo “$DECODED” | head -n1 | grep -q '^untrusted comment:'; then
-              printf '%s\n' “$DECODED” > “$KEY_PATH”
-            else
-              ONE=$(printf '%s' “$RAW” | tr -d '\r\n')
-              printf '%s\n%s\n' “untrusted comment: tauri signing key” “$ONE” > “$KEY_PATH”
-            fi
-          fi
-          if command -v base64 >/dev/null 2>&1; then
-            KEY_B64=$(base64 < “$KEY_PATH” | tr -d '\r\n')
-          else
-            KEY_B64=$(openssl base64 -A -in “$KEY_PATH”)
-          fi
-          echo “TAURI_SIGNING_PRIVATE_KEY=$KEY_B64” >> “$GITHUB_ENV”
-          if [ -n “${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}” ]; then
-            echo “TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}” >> $GITHUB_ENV
-          fi
-          echo “✅ Tauri signing key prepared”
+        run: echo "Skipping signing for fork"
 
       - name: Import Apple signing certificate
         if: runner.os == 'macOS'
