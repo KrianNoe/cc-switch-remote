@@ -62,3 +62,6 @@ pub use lightweight::*;
 pub use usage::*;
 pub use webdav_sync::*;
 pub use workspace::*;
+
+mod remote_host;
+pub use remote_host::*;

@@ -31,6 +31,8 @@ mod store;
 
 mod tray;
 mod usage_script;
+mod remote_host;
+mod ssh_manager;
 
 pub use app_config::{AppType, InstalledSkill, McpApps, McpServer, MultiAppConfig, SkillApps};
 pub use codex_config::{get_codex_auth_path, get_codex_config_path, write_codex_live_atomic};
@@ -412,6 +414,11 @@ pub fn run() {
 
             // 设置 AppHandle 用于代理故障转移时的 UI 更新
             app_state.proxy_service.set_app_handle(app.handle().clone());
+
+            // 初始化远程主机表
+            if let Err(e) = app_state.db.ensure_remote_hosts_table() {
+                log::warn!("Failed to init remote_hosts table: {e}");
+            }
 
             // ============================================================
             // 按表独立判断的导入逻辑（各类数据独立检查，互不影响）
@@ -1287,6 +1294,15 @@ pub fn run() {
             commands::enter_lightweight_mode,
             commands::exit_lightweight_mode,
             commands::is_lightweight_mode,
+            // Remote host management (SSH)
+            commands::list_remote_hosts,
+            commands::create_remote_host,
+            commands::update_remote_host,
+            commands::delete_remote_host,
+            commands::connect_remote_host,
+            commands::disconnect_remote_host,
+            commands::get_active_remote_host,
+            commands::test_remote_connection,
         ]);
 
     let app = builder

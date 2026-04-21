@@ -290,6 +290,60 @@ pub fn delete_file(path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
+/// 通过 SSH 读取远程 JSON 文件（路径为本地路径，自动映射到远程）
+pub fn ssh_read_json_file<T: for<'a> Deserialize<'a>>(
+    ssh: &crate::ssh_manager::SshManager,
+    local_path: &Path,
+) -> Result<T, AppError> {
+    let remote_path = ssh
+        .to_remote_path(local_path)
+        .ok_or_else(|| AppError::Config("未连接到远程主机".to_string()))?;
+
+    if !ssh.file_exists(&remote_path) {
+        return Err(AppError::Config(format!(
+            "远程文件不存在: {}",
+            remote_path.display()
+        )));
+    }
+
+    let content = ssh.read_file(&remote_path)?;
+    serde_json::from_str(&content).map_err(|e| AppError::json(&remote_path, e))
+}
+
+/// 通过 SSH 写入远程 JSON 文件（路径为本地路径，自动映射到远程）
+pub fn ssh_write_json_file<T: Serialize>(
+    ssh: &crate::ssh_manager::SshManager,
+    local_path: &Path,
+    data: &T,
+) -> Result<(), AppError> {
+    let remote_path = ssh
+        .to_remote_path(local_path)
+        .ok_or_else(|| AppError::Config("未连接到远程主机".to_string()))?;
+
+    let json =
+        serde_json::to_string_pretty(data).map_err(|e| AppError::JsonSerialize { source: e })?;
+    ssh.write_file(&remote_path, json.as_bytes())
+}
+
+/// 通过 SSH 写入远程文本文件
+pub fn ssh_write_text_file(
+    ssh: &crate::ssh_manager::SshManager,
+    local_path: &Path,
+    data: &str,
+) -> Result<(), AppError> {
+    let remote_path = ssh
+        .to_remote_path(local_path)
+        .ok_or_else(|| AppError::Config("未连接到远程主机".to_string()))?;
+    ssh.write_file(&remote_path, data.as_bytes())
+}
+
+/// 通过 SSH 检查远程文件是否存在
+pub fn ssh_file_exists(ssh: &crate::ssh_manager::SshManager, local_path: &Path) -> bool {
+    ssh.to_remote_path(local_path)
+        .map(|p| ssh.file_exists(&p))
+        .unwrap_or(false)
+}
+
 /// 检查 Claude Code 配置状态
 #[derive(Serialize, Deserialize)]
 pub struct ConfigStatus {

@@ -25,6 +25,7 @@ import {
   KeyRound,
   Shield,
   Cpu,
+  Server,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Provider, VisibleApps } from "@/types";
@@ -82,6 +83,7 @@ import EnvPanel from "@/components/openclaw/EnvPanel";
 import ToolsPanel from "@/components/openclaw/ToolsPanel";
 import AgentsDefaultsPanel from "@/components/openclaw/AgentsDefaultsPanel";
 import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
+import { RemoteHostsPanel } from "@/components/remote-hosts/RemoteHostsPanel";
 
 type View =
   | "providers"
@@ -96,7 +98,8 @@ type View =
   | "workspace"
   | "openclawEnv"
   | "openclawTools"
-  | "openclawAgents";
+  | "openclawAgents"
+  | "remoteHosts";
 
 interface WebDavSyncStatusUpdatedPayload {
   source?: string;
@@ -139,6 +142,7 @@ const VALID_VIEWS: View[] = [
   "openclawEnv",
   "openclawTools",
   "openclawAgents",
+  "remoteHosts",
 ];
 
 const getInitialView = (): View => {
@@ -158,6 +162,7 @@ function App() {
   const [settingsDefaultTab, setSettingsDefaultTab] = useState("general");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isWindowMaximized, setIsWindowMaximized] = useState(false);
+  const [activeRemoteName, setActiveRemoteName] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem(VIEW_STORAGE_KEY, currentView);
@@ -920,6 +925,12 @@ function App() {
           return <ToolsPanel />;
         case "openclawAgents":
           return <AgentsDefaultsPanel />;
+        case "remoteHosts":
+          return (
+            <RemoteHostsPanel
+              onActiveChange={(info) => setActiveRemoteName(info?.name ?? null)}
+            />
+          );
         default:
           return (
             <div className="px-6 flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -1133,6 +1144,7 @@ function App() {
                   {currentView === "openclawTools" && t("openclaw.tools.title")}
                   {currentView === "openclawAgents" &&
                     t("openclaw.agents.title")}
+                  {currentView === "remoteHosts" && "远程主机"}
                 </h1>
               </div>
             ) : (
@@ -1152,6 +1164,18 @@ function App() {
                     CC Switch
                   </a>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCurrentView("remoteHosts")}
+                  title="远程主机"
+                  className={`hover:bg-black/5 dark:hover:bg-white/5 relative ${currentView === "remoteHosts" ? "text-foreground" : "text-muted-foreground"}`}
+                >
+                  <Server className="w-4 h-4" />
+                  {activeRemoteName && (
+                    <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-green-500" />
+                  )}
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
